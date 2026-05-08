@@ -191,10 +191,20 @@ const SCHEMA = `
     test_plan_id INTEGER REFERENCES test_plans(id) ON DELETE SET NULL,
     name TEXT NOT NULL,
     description TEXT,
+    test_url TEXT,
+    environment TEXT,
+    browser TEXT,
     status TEXT DEFAULT 'in_progress',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     completed_at DATETIME
+  );
+  CREATE TABLE IF NOT EXISTS test_run_run_notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    test_run_id INTEGER NOT NULL REFERENCES test_runs(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
   CREATE TABLE IF NOT EXISTS test_run_results (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

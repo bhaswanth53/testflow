@@ -144,17 +144,21 @@ function initRichEditor(wrap) {
   editor.addEventListener('mouseup', () => updateToolbarState(toolbar, editor));
 
   // Paste images
-  editor.addEventListener('paste', async e => {
+  editor.addEventListener('paste', e => {
     const items = e.clipboardData?.items;
     if (!items) return;
     for (const item of items) {
       if (item.type.startsWith('image/')) {
         e.preventDefault();
-        const file = item.getAsFile();
-        const url = await uploadImage(file);
-        if (url) document.execCommand('insertImage', false, url);
-        syncHidden(editor, hidden);
-        break;
+        e.stopPropagation();
+        uploadImage(item.getAsFile()).then(url => {
+          if (url) {
+            editor.focus();
+            document.execCommand('insertImage', false, url);
+            syncHidden(editor, hidden);
+          }
+        });
+        return;
       }
     }
   });

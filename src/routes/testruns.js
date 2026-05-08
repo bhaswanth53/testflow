@@ -21,18 +21,17 @@ router.get('/new', (req, res) => {
     SELECT tc.*, tg.name as group_name FROM test_cases tc
     LEFT JOIN test_groups tg ON tg.id = tc.group_id
     WHERE tc.repository_id = ? AND tc.status != 'deprecated'
-    ORDER BY tc.group_id NULLS LAST, tc.priority, tc.title
+    ORDER BY tc.group_id, tc.priority, tc.title
   `).all(c.repo.id);
   const groups = db.prepare('SELECT * FROM test_groups WHERE repository_id = ? ORDER BY name').all(c.repo.id);
-
   db.close();
 
-  // Pre-group for clean template rendering
   const ungroupedCases = testCases.filter(c => c.group_id === null || c.group_id === undefined);
   const groupedCases = groups.map(g => ({
     id: g.id, name: g.name,
     cases: testCases.filter(c => String(c.group_id) === String(g.id))
   })).filter(g => g.cases.length > 0);
+
   res.render('testruns/new', { project: c.project, repo: c.repo, plans, testCases, groups, ungroupedCases, groupedCases, title: 'New Test Run' });
 });
 
@@ -42,18 +41,17 @@ router.post('/', (req, res) => {
   const c = ctx(db, req.params.projectSlug, req.params.repoSlug);
   if (!c) { db.close(); return res.redirect('/'); }
 
-  const { name, description, test_plan_id } = req.body;
+  const { name, description, test_plan_id, test_url, environment, browser } = req.body;
   let caseIds = req.body.case_ids || [];
   if (!Array.isArray(caseIds)) caseIds = [caseIds];
 
-  // If plan selected, use plan's cases
   if (test_plan_id) {
     const planCases = db.prepare('SELECT test_case_id FROM test_plan_cases WHERE test_plan_id = ?').all(test_plan_id);
     caseIds = planCases.map(r => r.test_case_id.toString());
   }
 
-  const runId = db.prepare('INSERT INTO test_runs (repository_id, test_plan_id, name, description) VALUES (?,?,?,?) RETURNING id')
-    .get(c.repo.id, test_plan_id || null, name, description || null).id;
+  const runId = db.prepare('INSERT INTO test_runs (repository_id, test_plan_id, name, description, test_url, environment, browser) VALUES (?,?,?,?,?,?,?) RETURNING id')
+    .get(c.repo.id, test_plan_id || null, name, description || null, test_url || null, environment || null, browser || null).id;
 
   const insertResult = db.prepare('INSERT OR IGNORE INTO test_run_results (test_run_id, test_case_id) VALUES (?,?)');
   caseIds.forEach(id => insertResult.run(runId, id));
@@ -82,13 +80,14 @@ router.get('/:runId', (req, res) => {
     JOIN test_cases tc ON tc.id = trr.test_case_id
     LEFT JOIN test_groups tg ON tg.id = tc.group_id
     WHERE trr.test_run_id = ?
-    ORDER BY tg.name NULLS LAST, tc.priority, tc.title
+    ORDER BY tg.name, tc.priority, tc.title
   `).all(run.id);
 
-  // Attach notes to each result
   results.forEach(r => {
     r.notes = db.prepare('SELECT * FROM test_run_notes WHERE test_run_result_id = ? ORDER BY created_at').all(r.id);
   });
+
+  const runNotes = db.prepare('SELECT * FROM test_run_run_notes WHERE test_run_id = ? ORDER BY created_at').all(run.id);
 
   const statusCounts = {
     total: results.length,
@@ -100,7 +99,49 @@ router.get('/:runId', (req, res) => {
   };
 
   db.close();
-  res.render('testruns/show', { project: c.project, repo: c.repo, run, results, statusCounts, title: run.name });
+  res.render('testruns/show', { project: c.project, repo: c.repo, run, results, runNotes, statusCounts, title: run.name });
+});
+
+// PDF export
+router.get('/:runId/pdf', (req, res) => {
+  const db = getDb();
+  const c = ctx(db, req.params.projectSlug, req.params.repoSlug);
+  if (!c) { db.close(); return res.status(404).send('Not found'); }
+
+  const run = db.prepare(`
+    SELECT tr.*, tp.name as plan_name
+    FROM test_runs tr LEFT JOIN test_plans tp ON tp.id = tr.test_plan_id
+    WHERE tr.id = ? AND tr.repository_id = ?
+  `).get(req.params.runId, c.repo.id);
+  if (!run) { db.close(); return res.status(404).send('Not found'); }
+
+  const results = db.prepare(`
+    SELECT trr.*, tc.title, tc.priority, tc.type, tc.url, tc.description as case_description,
+           tc.steps, tc.expected_result, tg.name as group_name
+    FROM test_run_results trr
+    JOIN test_cases tc ON tc.id = trr.test_case_id
+    LEFT JOIN test_groups tg ON tg.id = tc.group_id
+    WHERE trr.test_run_id = ?
+    ORDER BY tg.name, tc.priority, tc.title
+  `).all(run.id);
+
+  results.forEach(r => {
+    r.notes = db.prepare('SELECT * FROM test_run_notes WHERE test_run_result_id = ? ORDER BY created_at').all(r.id);
+  });
+
+  const runNotes = db.prepare('SELECT * FROM test_run_run_notes WHERE test_run_id = ? ORDER BY created_at').all(run.id);
+
+  const statusCounts = {
+    total: results.length,
+    passed: results.filter(r => r.status === 'passed').length,
+    failed: results.filter(r => r.status === 'failed').length,
+    blocked: results.filter(r => r.status === 'blocked').length,
+    skipped: results.filter(r => r.status === 'skipped').length,
+    pending: results.filter(r => r.status === 'pending').length,
+  };
+
+  db.close();
+  res.render('testruns/pdf', { project: c.project, repo: c.repo, run, results, runNotes, statusCounts, layout: false, title: run.name });
 });
 
 // Update result status
@@ -112,7 +153,7 @@ router.post('/:runId/results/:resultId/status', (req, res) => {
   res.json({ ok: true });
 });
 
-// Add note
+// Add per-case note
 router.post('/:runId/results/:resultId/notes', (req, res) => {
   const { content } = req.body;
   if (!content) return res.status(400).json({ error: 'content required' });
@@ -123,7 +164,7 @@ router.post('/:runId/results/:resultId/notes', (req, res) => {
   res.json({ ok: true, note });
 });
 
-// Update note
+// Update per-case note
 router.post('/:runId/results/:resultId/notes/:noteId/edit', (req, res) => {
   const { content } = req.body;
   const db = getDb();
@@ -132,10 +173,38 @@ router.post('/:runId/results/:resultId/notes/:noteId/edit', (req, res) => {
   res.json({ ok: true });
 });
 
-// Delete note
+// Delete per-case note
 router.post('/:runId/results/:resultId/notes/:noteId/delete', (req, res) => {
   const db = getDb();
   db.prepare('DELETE FROM test_run_notes WHERE id=?').run(req.params.noteId);
+  db.close();
+  res.json({ ok: true });
+});
+
+// Add run-level note
+router.post('/:runId/run-notes', (req, res) => {
+  const { content } = req.body;
+  if (!content) return res.status(400).json({ error: 'content required' });
+  const db = getDb();
+  const noteId = db.prepare('INSERT INTO test_run_run_notes (test_run_id, content) VALUES (?,?) RETURNING id').get(req.params.runId, content).id;
+  const note = db.prepare('SELECT * FROM test_run_run_notes WHERE id = ?').get(noteId);
+  db.close();
+  res.json({ ok: true, note });
+});
+
+// Update run-level note
+router.post('/:runId/run-notes/:noteId/edit', (req, res) => {
+  const { content } = req.body;
+  const db = getDb();
+  db.prepare('UPDATE test_run_run_notes SET content=?, updated_at=CURRENT_TIMESTAMP WHERE id=?').run(content, req.params.noteId);
+  db.close();
+  res.json({ ok: true });
+});
+
+// Delete run-level note
+router.post('/:runId/run-notes/:noteId/delete', (req, res) => {
+  const db = getDb();
+  db.prepare('DELETE FROM test_run_run_notes WHERE id=?').run(req.params.noteId);
   db.close();
   res.json({ ok: true });
 });
@@ -146,10 +215,8 @@ router.post('/:runId/status', (req, res) => {
   const db = getDb();
   const c = ctx(db, req.params.projectSlug, req.params.repoSlug);
   if (!c) { db.close(); return res.redirect('/'); }
-
   const completedAt = (status === 'completed' || status === 'aborted') ? new Date().toISOString() : null;
-  db.prepare('UPDATE test_runs SET status=?, updated_at=CURRENT_TIMESTAMP, completed_at=? WHERE id=?')
-    .run(status, completedAt, req.params.runId);
+  db.prepare('UPDATE test_runs SET status=?, updated_at=CURRENT_TIMESTAMP, completed_at=? WHERE id=?').run(status, completedAt, req.params.runId);
   db.close();
   res.redirect(`/projects/${req.params.projectSlug}/repos/${req.params.repoSlug}/runs/${req.params.runId}`);
 });

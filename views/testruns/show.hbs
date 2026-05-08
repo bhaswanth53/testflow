@@ -6,9 +6,10 @@
       <span style="font-size:0.82rem;color:var(--text-3)">{{formatDate run.created_at}}</span>
     </div>
     <h1>{{run.name}}</h1>
-    {{#if run.description}}<p>{{run.description}}</p>{{/if}}
+    {{#if run.description}}<p style="color:var(--text-2);margin-top:4px">{{run.description}}</p>{{/if}}
   </div>
   <div class="btn-group">
+    <a href="/projects/{{project.slug}}/repos/{{repo.slug}}/runs/{{run.id}}/pdf" target="_blank" class="btn btn-secondary">⬇ Export PDF</a>
     {{#if (eq run.status 'in_progress')}}
     <form action="/projects/{{project.slug}}/repos/{{repo.slug}}/runs/{{run.id}}/status" method="POST" style="display:inline">
       <input type="hidden" name="status" value="completed">
@@ -30,7 +31,34 @@
   </div>
 </div>
 
-<!-- Progress Summary -->
+{{#if (or run.test_url (or run.environment run.browser))}}
+<div class="card" style="margin-bottom:16px">
+  <div class="card-body" style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;padding:12px 20px">
+    {{#if run.environment}}
+    <div style="display:flex;align-items:center;gap:7px;font-size:0.875rem">
+      <span style="color:var(--text-3)">🖥</span>
+      <span style="font-weight:500;color:var(--text-2)">Environment:</span>
+      <span>{{run.environment}}</span>
+    </div>
+    {{/if}}
+    {{#if run.browser}}
+    <div style="display:flex;align-items:center;gap:7px;font-size:0.875rem">
+      <span style="color:var(--text-3)">🌐</span>
+      <span style="font-weight:500;color:var(--text-2)">Browser:</span>
+      <span>{{run.browser}}</span>
+    </div>
+    {{/if}}
+    {{#if run.test_url}}
+    <div style="display:flex;align-items:center;gap:7px;font-size:0.875rem">
+      <span style="color:var(--text-3)">🔗</span>
+      <span style="font-weight:500;color:var(--text-2)">URL:</span>
+      <a href="{{run.test_url}}" target="_blank">{{run.test_url}}</a>
+    </div>
+    {{/if}}
+  </div>
+</div>
+{{/if}}
+
 <div class="card" style="margin-bottom:20px">
   <div class="card-body">
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:16px;margin-bottom:14px">
@@ -75,6 +103,61 @@
   </div>
 </div>
 
+<!-- Run-level Notes -->
+<div class="card" style="margin-bottom:20px">
+  <div class="card-header">
+    <h2>📝 Run Notes</h2>
+    <span style="font-size:0.8rem;color:var(--text-3)">General observations, suggestions, and thoughts about this run</span>
+  </div>
+  <div class="card-body">
+    <div id="run-notes-list">
+      {{#each runNotes}}
+      <div class="note-card" data-run-note-id="{{id}}" style="margin-bottom:10px">
+        <div class="note-card-header">
+          <span class="note-time">{{formatDateTime created_at}}</span>
+          {{#if (eq ../run.status 'in_progress')}}
+          <div style="display:flex;gap:4px">
+            <button type="button" class="btn btn-ghost btn-sm run-note-edit-btn" style="font-size:0.78rem">Edit</button>
+            <button type="button" class="btn btn-ghost btn-sm run-note-delete-btn" style="font-size:0.78rem;color:var(--red)"
+              data-url="/projects/{{../project.slug}}/repos/{{../repo.slug}}/runs/{{../run.id}}/run-notes/{{id}}/delete">✕</button>
+          </div>
+          {{/if}}
+        </div>
+        <div class="note-content">{{{content}}}</div>
+      </div>
+      {{/each}}
+    </div>
+    {{#if (eq run.status 'in_progress')}}
+    <div class="run-note-add-form" data-url="/projects/{{project.slug}}/repos/{{repo.slug}}/runs/{{run.id}}/run-notes" style="margin-top:12px">
+      <div class="rich-editor-wrap" id="run-note-editor-wrap">
+        <div class="rich-editor-toolbar">
+          <button type="button" class="toolbar-btn" data-cmd="bold"><b>B</b></button>
+          <button type="button" class="toolbar-btn" data-cmd="italic"><i>I</i></button>
+          <button type="button" class="toolbar-btn" data-cmd="underline"><u>U</u></button>
+          <button type="button" class="toolbar-btn" data-cmd="strikeThrough"><s>S</s></button>
+          <span class="toolbar-sep"></span>
+          <button type="button" class="toolbar-btn" data-cmd="insertUnorderedList">• List</button>
+          <button type="button" class="toolbar-btn" data-cmd="insertOrderedList">1. List</button>
+          <span class="toolbar-sep"></span>
+          <button type="button" class="toolbar-btn" data-cmd="formatBlock" data-val="blockquote">❝</button>
+          <button type="button" class="toolbar-btn" data-cmd="formatBlock" data-val="pre">{ }</button>
+          <span class="toolbar-sep"></span>
+          <button type="button" class="toolbar-btn" data-cmd="insertImage">📷 Image</button>
+          <button type="button" class="toolbar-btn" data-cmd="createLink">🔗 Link</button>
+          <span class="toolbar-sep"></span>
+          <button type="button" class="toolbar-btn" data-cmd="removeFormat">✕</button>
+        </div>
+        <div class="rich-editor" id="run-note-editor" contenteditable="true" style="min-height:100px"></div>
+        <input type="hidden" id="run-note-content">
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px">
+        <button type="button" class="btn btn-primary btn-sm" id="run-note-submit">Add Note</button>
+      </div>
+    </div>
+    {{/if}}
+  </div>
+</div>
+
 <!-- Filter bar -->
 <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
   <span style="font-size:0.82rem;color:var(--text-3)">Filter:</span>
@@ -86,7 +169,6 @@
   <button class="btn btn-sm run-filter" data-filter="skipped">Skipped</button>
 </div>
 
-<!-- Results -->
 <div id="results-list">
 {{#each results}}
 <div class="run-result-row" data-status="{{status}}">
@@ -145,12 +227,11 @@
 
     <div class="divider"></div>
 
-    <!-- Notes -->
     <div style="margin-bottom:12px">
-      <div style="font-size:0.82rem;font-weight:600;color:var(--text-2);margin-bottom:10px">📝 Notes</div>
+      <div style="font-size:0.82rem;font-weight:600;color:var(--text-2);margin-bottom:10px">📝 Test Case Notes</div>
       <div class="notes-list">
         {{#each notes}}
-        <div class="note-card" data-note-id="{{id}}">
+        <div class="note-card" data-note-id="{{id}}" style="margin-bottom:8px">
           <div class="note-card-header">
             <span class="note-time">{{formatDateTime created_at}}</span>
             {{#if (eq ../../run.status 'in_progress')}}
@@ -168,7 +249,7 @@
 
       {{#if (eq ../run.status 'in_progress')}}
       <div style="margin-top:10px">
-        <div style="font-size:0.8rem;color:var(--text-3);margin-bottom:6px">Add a note (supports rich text, images)</div>
+        <div style="font-size:0.8rem;color:var(--text-3);margin-bottom:6px">Add a note — supports rich text, images (paste or drag)</div>
         <div class="add-note-form"
           data-url="/projects/{{../project.slug}}/repos/{{../repo.slug}}/runs/{{../run.id}}/results/{{id}}/notes">
           <div class="rich-editor-wrap">
@@ -189,11 +270,11 @@
               <span class="toolbar-sep"></span>
               <button type="button" class="toolbar-btn" data-cmd="removeFormat">✕</button>
             </div>
-            <div class="rich-editor" contenteditable="true" style="min-height:80px" placeholder="Type your note here… you can paste or drag images"></div>
+            <div class="rich-editor" contenteditable="true" style="min-height:80px"></div>
             <input type="hidden" name="content">
           </div>
           <div style="display:flex;justify-content:flex-end;margin-top:8px">
-            <button type="submit" class="btn btn-primary btn-sm">Add Note</button>
+            <button type="button" class="btn btn-primary btn-sm add-note-submit">Add Note</button>
           </div>
         </div>
       </div>
@@ -210,7 +291,6 @@
 </div>
 
 <script>
-// Filter by status
 document.querySelectorAll('.run-filter').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.run-filter').forEach(b => b.classList.remove('active','btn-primary'));
@@ -222,26 +302,20 @@ document.querySelectorAll('.run-filter').forEach(btn => {
   });
 });
 
-// Parse steps into numbered list
 document.querySelectorAll('.steps-raw').forEach(el => {
   const lines = el.textContent.split('\n').map(l => l.replace(/^\d+[\.\)]\s*/, '').trim()).filter(Boolean);
   if (lines.length > 1) {
-    const ol = document.createElement('ol');
-    ol.className = 'steps-list';
+    const ol = document.createElement('ol'); ol.className = 'steps-list';
     lines.forEach(l => { const li = document.createElement('li'); li.textContent = l; ol.appendChild(li); });
     el.replaceWith(ol);
   }
 });
 
-// Init rich editors for notes
-document.querySelectorAll('.add-note-form .rich-editor-wrap').forEach(wrap => {
-  initRichEditorInline(wrap);
-});
-
-function initRichEditorInline(wrap) {
+// ── Inline rich editor (paste fix: preventDefault is synchronous) ──
+function initInlineEditor(wrap) {
   const toolbar = wrap.querySelector('.rich-editor-toolbar');
   const editor = wrap.querySelector('.rich-editor');
-  const hidden = wrap.querySelector('input[name=content]');
+  const hidden = wrap.querySelector('input[name=content], input[type=hidden]');
   if (!toolbar || !editor) return;
 
   toolbar.addEventListener('mousedown', e => {
@@ -250,7 +324,7 @@ function initRichEditorInline(wrap) {
     if (!btn) return;
     const cmd = btn.dataset.cmd, val = btn.dataset.val;
     if (cmd === 'insertImage') triggerImageUpload(editor);
-    else if (cmd === 'createLink') { const url = prompt('URL:'); if (url) document.execCommand('createLink', false, url); }
+    else if (cmd === 'createLink') { const u = prompt('URL:'); if (u) document.execCommand('createLink', false, u); }
     else document.execCommand(cmd, false, val || null);
     editor.focus();
     if (hidden) hidden.value = editor.innerHTML;
@@ -258,70 +332,171 @@ function initRichEditorInline(wrap) {
 
   editor.addEventListener('input', () => { if (hidden) hidden.value = editor.innerHTML; });
 
-  editor.addEventListener('paste', async e => {
+  editor.addEventListener('paste', e => {
     const items = e.clipboardData?.items;
     if (!items) return;
     for (const item of items) {
       if (item.type.startsWith('image/')) {
         e.preventDefault();
-        const url = await uploadImage(item.getAsFile());
-        if (url) document.execCommand('insertImage', false, url);
-        if (hidden) hidden.value = editor.innerHTML;
-        break;
+        e.stopPropagation();
+        uploadImage(item.getAsFile()).then(url => {
+          if (url) { editor.focus(); document.execCommand('insertImage', false, url); if (hidden) hidden.value = editor.innerHTML; }
+        });
+        return;
       }
     }
   });
 
-  editor.addEventListener('drop', async e => {
-    const files = e.dataTransfer?.files;
-    if (!files?.length) return;
+  editor.addEventListener('drop', e => {
+    const files = e.dataTransfer?.files; if (!files?.length) return;
+    let handled = false;
     for (const f of files) {
       if (f.type.startsWith('image/')) {
-        e.preventDefault();
-        const url = await uploadImage(f);
-        if (url) document.execCommand('insertImage', false, url);
-        if (hidden) hidden.value = editor.innerHTML;
+        if (!handled) { e.preventDefault(); handled = true; }
+        uploadImage(f).then(url => {
+          if (url) { editor.focus(); document.execCommand('insertImage', false, url); if (hidden) hidden.value = editor.innerHTML; }
+        });
       }
     }
   });
 }
 
-// Submit note forms
+document.querySelectorAll('.add-note-form .rich-editor-wrap').forEach(initInlineEditor);
+
+// ── Per-case note: submit ──
 document.addEventListener('click', async e => {
-  // Add note
-  const addBtn = e.target.closest('.add-note-form button[type=submit]');
-  if (addBtn) {
-    e.preventDefault();
-    const form = addBtn.closest('.add-note-form');
+  const submitBtn = e.target.closest('.add-note-submit');
+  if (submitBtn) {
+    const form = submitBtn.closest('.add-note-form');
     const editor = form.querySelector('.rich-editor');
+    const hidden = form.querySelector('input[name=content]');
     const content = editor.innerHTML.trim();
     if (!content || content === '<br>') { showToast('Note is empty','error'); return; }
     try {
-      const r = await fetch(form.dataset.url, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ content })
-      });
+      const r = await fetch(form.dataset.url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content }) });
       const data = await r.json();
       if (data.ok) {
         const notesList = form.closest('.run-result-body').querySelector('.notes-list');
         const div = document.createElement('div');
-        div.className = 'note-card';
-        div.dataset.noteId = data.note.id;
-        div.innerHTML = `<div class="note-card-header"><span class="note-time">Just now</span><div style="display:flex;gap:4px"><button type="button" class="btn btn-ghost btn-sm edit-note-btn" style="font-size:0.78rem">Edit</button><button type="button" class="btn btn-ghost btn-sm delete-note-btn" style="font-size:0.78rem;color:var(--red)" data-url="${form.dataset.url.replace('/notes','')}/notes/${data.note.id}/delete">✕</button></div></div><div class="note-content">${data.note.content}</div>`;
+        div.className = 'note-card'; div.dataset.noteId = data.note.id; div.style.marginBottom = '8px';
+        div.innerHTML = `<div class="note-card-header"><span class="note-time">Just now</span><div style="display:flex;gap:4px"><button type="button" class="btn btn-ghost btn-sm edit-note-btn" style="font-size:0.78rem">Edit</button><button type="button" class="btn btn-ghost btn-sm delete-note-btn" style="font-size:0.78rem;color:var(--red)">✕</button></div></div><div class="note-content">${data.note.content}</div>`;
         notesList.appendChild(div);
-        editor.innerHTML = '';
-        form.querySelector('input[name=content]').value = '';
-        // update note count
-        const row = form.closest('.run-result-row');
-        const countEl = row?.querySelector('.run-result-header [style*="note"]');
+        editor.innerHTML = ''; if (hidden) hidden.value = '';
         showToast('Note added','success');
       }
-    } catch(err) { showToast('Error saving note','error'); }
+    } catch { showToast('Error saving note','error'); }
     return;
   }
 
-  // Delete note
+  // Delete per-case note
   const delBtn = e.target.closest('.delete-note-btn');
+  if (delBtn) {
+    if (!confirm('Delete this note?')) return;
+    const noteCard = delBtn.closest('.note-card');
+    const noteId = noteCard?.dataset?.noteId;
+    const addForm = noteCard?.closest('.run-result-body')?.querySelector('.add-note-form');
+    const deleteUrl = delBtn.dataset.url || (addForm ? addForm.dataset.url + '/' + noteId + '/delete' : null);
+    if (!deleteUrl) return;
+    try {
+      const r = await fetch(deleteUrl, { method:'POST' });
+      const data = await r.json();
+      if (data.ok) { noteCard.remove(); showToast('Note deleted'); }
+    } catch {}
+    return;
+  }
+
+  // Edit per-case note inline
+  const editBtn = e.target.closest('.edit-note-btn');
+  if (editBtn) {
+    const noteCard = editBtn.closest('.note-card');
+    const contentEl = noteCard.querySelector('.note-content');
+    const noteId = noteCard.dataset.noteId;
+    const addForm = noteCard.closest('.run-result-body')?.querySelector('.add-note-form');
+    if (!addForm) return;
+    const editUrl = addForm.dataset.url + '/' + noteId + '/edit';
+    if (editBtn.textContent === 'Edit') {
+      contentEl.contentEditable = 'true';
+      contentEl.style.cssText = 'border:1px solid var(--accent);border-radius:var(--radius);padding:6px;outline:none';
+      contentEl.focus(); editBtn.textContent = 'Save';
+    } else {
+      try {
+        const r = await fetch(editUrl, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: contentEl.innerHTML }) });
+        const data = await r.json();
+        if (data.ok) { contentEl.contentEditable='false'; contentEl.style.cssText=''; editBtn.textContent='Edit'; showToast('Note updated','success'); }
+      } catch { showToast('Error','error'); }
+    }
+    return;
+  }
+});
+
+// ── Run-level notes ──
+const runNoteEditorWrap = document.getElementById('run-note-editor-wrap');
+if (runNoteEditorWrap) {
+  const editor = document.getElementById('run-note-editor');
+  const hidden = document.getElementById('run-note-content');
+  const toolbar = runNoteEditorWrap.querySelector('.rich-editor-toolbar');
+
+  toolbar?.addEventListener('mousedown', e => {
+    e.preventDefault();
+    const btn = e.target.closest('.toolbar-btn');
+    if (!btn) return;
+    const cmd = btn.dataset.cmd, val = btn.dataset.val;
+    if (cmd === 'insertImage') triggerImageUpload(editor);
+    else if (cmd === 'createLink') { const u = prompt('URL:'); if (u) document.execCommand('createLink', false, u); }
+    else document.execCommand(cmd, false, val || null);
+    editor.focus(); hidden.value = editor.innerHTML;
+  });
+
+  editor?.addEventListener('input', () => { hidden.value = editor.innerHTML; });
+
+  editor?.addEventListener('paste', e => {
+    const items = e.clipboardData?.items; if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault(); e.stopPropagation();
+        uploadImage(item.getAsFile()).then(url => {
+          if (url) { editor.focus(); document.execCommand('insertImage', false, url); hidden.value = editor.innerHTML; }
+        });
+        return;
+      }
+    }
+  });
+
+  editor?.addEventListener('drop', e => {
+    const files = e.dataTransfer?.files; if (!files?.length) return;
+    let handled = false;
+    for (const f of files) {
+      if (f.type.startsWith('image/')) {
+        if (!handled) { e.preventDefault(); handled = true; }
+        uploadImage(f).then(url => {
+          if (url) { editor.focus(); document.execCommand('insertImage', false, url); hidden.value = editor.innerHTML; }
+        });
+      }
+    }
+  });
+
+  document.getElementById('run-note-submit')?.addEventListener('click', async () => {
+    const content = editor.innerHTML.trim();
+    if (!content || content === '<br>') { showToast('Note is empty','error'); return; }
+    const form = document.querySelector('.run-note-add-form');
+    try {
+      const r = await fetch(form.dataset.url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content }) });
+      const data = await r.json();
+      if (data.ok) {
+        const list = document.getElementById('run-notes-list');
+        const div = document.createElement('div');
+        div.className = 'note-card'; div.dataset.runNoteId = data.note.id; div.style.marginBottom = '10px';
+        div.innerHTML = `<div class="note-card-header"><span class="note-time">Just now</span><div style="display:flex;gap:4px"><button type="button" class="btn btn-ghost btn-sm run-note-edit-btn" style="font-size:0.78rem">Edit</button><button type="button" class="btn btn-ghost btn-sm run-note-delete-btn" style="font-size:0.78rem;color:var(--red)" data-url="${form.dataset.url}/${data.note.id}/delete">✕</button></div></div><div class="note-content">${data.note.content}</div>`;
+        list.appendChild(div);
+        editor.innerHTML = ''; hidden.value = '';
+        showToast('Note added','success');
+      }
+    } catch { showToast('Error','error'); }
+  });
+}
+
+document.addEventListener('click', async e => {
+  const delBtn = e.target.closest('.run-note-delete-btn');
   if (delBtn) {
     if (!confirm('Delete this note?')) return;
     try {
@@ -331,46 +506,22 @@ document.addEventListener('click', async e => {
     } catch {}
     return;
   }
-
-  // Edit note (inline)
-  const editBtn = e.target.closest('.edit-note-btn');
+  const editBtn = e.target.closest('.run-note-edit-btn');
   if (editBtn) {
     const noteCard = editBtn.closest('.note-card');
     const contentEl = noteCard.querySelector('.note-content');
-    const noteId = noteCard.dataset.noteId;
-    const resultBody = noteCard.closest('.run-result-body');
-    const runResultUrl = resultBody.querySelector('.add-note-form')?.dataset.url;
-    if (!runResultUrl) return;
-    const editUrl = runResultUrl + '/' + noteId + '/edit';
-
+    const noteId = noteCard.dataset.runNoteId;
+    const form = document.querySelector('.run-note-add-form');
+    const editUrl = form.dataset.url + '/' + noteId + '/edit';
     if (editBtn.textContent === 'Edit') {
-      // Switch to edit mode
-      const current = contentEl.innerHTML;
-      contentEl.setAttribute('data-original', current);
       contentEl.contentEditable = 'true';
-      contentEl.style.border = '1px solid var(--accent)';
-      contentEl.style.borderRadius = 'var(--radius)';
-      contentEl.style.padding = '6px';
-      contentEl.style.outline = 'none';
-      contentEl.focus();
-      editBtn.textContent = 'Save';
+      contentEl.style.cssText = 'border:1px solid var(--accent);border-radius:var(--radius);padding:6px;outline:none';
+      contentEl.focus(); editBtn.textContent = 'Save';
     } else {
-      // Save
-      const newContent = contentEl.innerHTML;
       try {
-        const r = await fetch(editUrl, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ content: newContent })
-        });
+        const r = await fetch(editUrl, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: contentEl.innerHTML }) });
         const data = await r.json();
-        if (data.ok) {
-          contentEl.contentEditable = 'false';
-          contentEl.style.border = '';
-          contentEl.style.borderRadius = '';
-          contentEl.style.padding = '';
-          editBtn.textContent = 'Edit';
-          showToast('Note updated','success');
-        }
+        if (data.ok) { contentEl.contentEditable='false'; contentEl.style.cssText=''; editBtn.textContent='Edit'; showToast('Updated','success'); }
       } catch { showToast('Error','error'); }
     }
   }

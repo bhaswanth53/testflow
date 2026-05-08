@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{run.name}} — Test Report</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 13px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1a1a2e; background: #fff; line-height: 1.6; }
+
+    /* ── Print controls (hidden in PDF) ── */
+    .print-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: #3b6ef4; color: white; padding: 10px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .print-bar h3 { font-size: 0.9rem; font-weight: 500; }
+    .print-bar-btns { display: flex; gap: 8px; }
+    .print-btn {
+      background: white; color: #3b6ef4; border: none; border-radius: 6px;
+      padding: 6px 16px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+    }
+    .print-btn:hover { background: #f0f4ff; }
+    .close-btn {
+      background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px;
+      padding: 6px 12px; font-size: 0.85rem; cursor: pointer;
+    }
+    @media print { .print-bar { display: none !important; } }
+
+    /* ── Page wrapper ── */
+    .page { max-width: 900px; margin: 0 auto; padding: 64px 48px 48px; }
+    @media print {
+      .page { max-width: 100%; padding: 24px 32px; margin: 0; }
+      body { font-size: 11px; }
+    }
+
+    /* ── Report header ── */
+    .report-header { border-bottom: 3px solid #3b6ef4; padding-bottom: 20px; margin-bottom: 28px; }
+    .report-brand { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+    .report-brand-icon { font-size: 1.4rem; color: #3b6ef4; }
+    .report-brand-name { font-size: 1rem; font-weight: 700; color: #3b6ef4; letter-spacing: -0.01em; }
+    .report-title { font-size: 1.6rem; font-weight: 700; color: #1a1a2e; letter-spacing: -0.02em; margin-bottom: 6px; }
+    .report-subtitle { font-size: 0.85rem; color: #666; }
+    .report-meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 20px; }
+    .meta-item { background: #f7f8fa; border-radius: 8px; padding: 10px 14px; }
+    .meta-label { font-size: 0.7rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+    .meta-value { font-size: 0.88rem; font-weight: 600; color: #1a1a2e; word-break: break-all; }
+
+    /* ── Progress ── */
+    .summary-section { margin-bottom: 28px; }
+    .summary-section h2 { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 14px; }
+    .stat-box { text-align: center; background: #f7f8fa; border-radius: 8px; padding: 12px 8px; }
+    .stat-num { font-size: 1.5rem; font-weight: 700; line-height: 1; }
+    .stat-lbl { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin-top: 3px; font-weight: 600; }
+    .stat-passed .stat-num { color: #16a34a; }
+    .stat-failed .stat-num { color: #dc2626; }
+    .stat-blocked .stat-num { color: #7c3aed; }
+    .stat-skipped .stat-num { color: #888; }
+    .stat-pending .stat-num { color: #aaa; }
+
+    .progress-bar-wrap { height: 10px; background: #e5e7eb; border-radius: 99px; overflow: hidden; display: flex; margin-bottom: 8px; }
+    .pb-seg { height: 100%; }
+    .pb-passed { background: #16a34a; }
+    .pb-failed { background: #dc2626; }
+    .pb-blocked { background: #7c3aed; }
+    .pb-skipped { background: #9ca3af; }
+    .pb-pending { background: #e5e7eb; }
+    .progress-legend { display: flex; gap: 14px; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: #555; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* ── Run Notes ── */
+    .run-notes-section { margin-bottom: 28px; }
+    .run-notes-section h2 { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+    .run-note-card { background: #fffbf0; border: 1px solid #fde68a; border-left: 3px solid #d97706; border-radius: 6px; padding: 12px 14px; margin-bottom: 10px; }
+    .run-note-time { font-size: 0.72rem; color: #888; margin-bottom: 6px; }
+    .run-note-body { font-size: 0.85rem; line-height: 1.7; }
+    .run-note-body img { max-width: 100%; border-radius: 4px; margin: 6px 0; page-break-inside: avoid; }
+
+    /* ── Results ── */
+    .results-section h2 { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+    .result-card { border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 14px; page-break-inside: avoid; overflow: hidden; }
+    .result-card-header { display: flex; align-items: center; gap: 12px; padding: 11px 14px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; }
+    .result-status-pill { font-size: 0.7rem; font-weight: 700; padding: 2px 9px; border-radius: 99px; letter-spacing: 0.03em; white-space: nowrap; }
+    .pill-passed { background: #dcfce7; color: #16a34a; }
+    .pill-failed { background: #fee2e2; color: #dc2626; }
+    .pill-blocked { background: #ede9fe; color: #7c3aed; }
+    .pill-skipped { background: #f1f2f5; color: #6b7280; }
+    .pill-pending { background: #f1f2f5; color: #9ca3af; }
+    .result-title { font-weight: 600; font-size: 0.9rem; flex: 1; }
+    .result-badges { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .badge { font-size: 0.68rem; padding: 2px 7px; border-radius: 99px; font-weight: 600; }
+    .badge-gray { background: #f1f2f5; color: #555; }
+    .badge-blue { background: #eef1fe; color: #3b6ef4; }
+    .priority-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 3px; }
+    .dot-critical { background: #dc2626; }
+    .dot-high { background: #ea580c; }
+    .dot-medium { background: #d97706; }
+    .dot-low { background: #9ca3af; }
+
+    .result-card-body { padding: 12px 14px; }
+    .result-section { margin-bottom: 10px; }
+    .result-section-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin-bottom: 4px; }
+    .result-section-content { font-size: 0.83rem; line-height: 1.6; color: #333; }
+    .expected-box { background: #f0fdf4; border-left: 3px solid #16a34a; border-radius: 4px; padding: 8px 10px; font-size: 0.83rem; }
+    .steps-ol { padding-left: 18px; font-size: 0.83rem; line-height: 1.8; }
+    .steps-ol li { margin-bottom: 2px; }
+
+    .notes-area { margin-top: 10px; border-top: 1px solid #f0f0f0; padding-top: 10px; }
+    .note-item { background: #fafafa; border: 1px solid #e8e8e8; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; }
+    .note-item-time { font-size: 0.7rem; color: #888; margin-bottom: 5px; }
+    .note-item-content { font-size: 0.83rem; line-height: 1.65; }
+    .note-item-content img { max-width: 100%; border-radius: 4px; margin: 4px 0; page-break-inside: avoid; }
+    .note-item-content p { margin-bottom: 4px; }
+    .note-item-content strong { font-weight: 600; }
+    .note-item-content em { font-style: italic; }
+    .note-item-content ul, .note-item-content ol { padding-left: 16px; margin: 4px 0; }
+    .note-item-content code { font-family: 'Courier New', monospace; background: #f0f0f0; padding: 1px 4px; border-radius: 3px; font-size: 0.85em; }
+    .note-item-content blockquote { border-left: 3px solid #3b6ef4; padding-left: 10px; color: #555; margin: 4px 0; }
+    .note-item-content pre { background: #f5f5f5; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 0.8em; }
+
+    .url-link { font-size: 0.78rem; color: #3b6ef4; word-break: break-all; }
+
+    /* ── Footer ── */
+    .report-footer { margin-top: 40px; padding-top: 14px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: #aaa; }
+    @media print {
+      .result-card { page-break-inside: avoid; }
+      .notes-area { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Print control bar (hidden when printing) -->
+<div class="print-bar">
+  <h3>📄 {{run.name}} — Test Report</h3>
+  <div class="print-bar-btns">
+    <button class="print-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+    <button class="close-btn" onclick="window.close()">✕ Close</button>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ── Report Header ── -->
+  <div class="report-header">
+    <div class="report-brand">
+      <span class="report-brand-icon">⬡</span>
+      <span class="report-brand-name">TestFlow</span>
+    </div>
+    <div class="report-title">{{run.name}}</div>
+    <div class="report-subtitle">Test Execution Report · {{project.name}} / {{repo.name}}</div>
+
+    <div class="report-meta-grid">
+      <div class="meta-item">
+        <div class="meta-label">Status</div>
+        <div class="meta-value">{{statusLabel run.status}}</div>
+      </div>
+      {{#if run.plan_name}}
+      <div class="meta-item">
+        <div class="meta-label">Test Plan</div>
+        <div class="meta-value">{{run.plan_name}}</div>
+      </div>
+      {{/if}}
+      {{#if run.environment}}
+      <div class="meta-item">
+        <div class="meta-label">Environment</div>
+        <div class="meta-value">{{run.environment}}</div>
+      </div>
+      {{/if}}
+      {{#if run.browser}}
+      <div class="meta-item">
+        <div class="meta-label">Browser</div>
+        <div class="meta-value">{{run.browser}}</div>
+      </div>
+      {{/if}}
+      {{#if run.test_url}}
+      <div class="meta-item">
+        <div class="meta-label">Test URL</div>
+        <div class="meta-value"><a href="{{run.test_url}}" class="url-link">{{run.test_url}}</a></div>
+      </div>
+      {{/if}}
+      <div class="meta-item">
+        <div class="meta-label">Started</div>
+        <div class="meta-value">{{formatDate run.created_at}}</div>
+      </div>
+      {{#if run.completed_at}}
+      <div class="meta-item">
+        <div class="meta-label">Completed</div>
+        <div class="meta-value">{{formatDate run.completed_at}}</div>
+      </div>
+      {{/if}}
+      <div class="meta-item">
+        <div class="meta-label">Pass Rate</div>
+        <div class="meta-value" style="color:#16a34a">{{pct statusCounts.passed statusCounts.total}}%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Summary ── -->
+  <div class="summary-section">
+    <h2>Summary</h2>
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="stat-num">{{statusCounts.total}}</div>
+        <div class="stat-lbl">Total</div>
+      </div>
+      <div class="stat-box stat-passed">
+        <div class="stat-num">{{statusCounts.passed}}</div>
+        <div class="stat-lbl">Passed</div>
+      </div>
+      <div class="stat-box stat-failed">
+        <div class="stat-num">{{statusCounts.failed}}</div>
+        <div class="stat-lbl">Failed</div>
+      </div>
+      <div class="stat-box stat-blocked">
+        <div class="stat-num">{{statusCounts.blocked}}</div>
+        <div class="stat-lbl">Blocked</div>
+      </div>
+      <div class="stat-box stat-skipped">
+        <div class="stat-num">{{statusCounts.skipped}}</div>
+        <div class="stat-lbl">Skipped</div>
+      </div>
+      <div class="stat-box stat-pending">
+        <div class="stat-num">{{statusCounts.pending}}</div>
+        <div class="stat-lbl">Pending</div>
+      </div>
+    </div>
+
+    <div class="progress-bar-wrap">
+      <div class="pb-seg pb-passed" style="width:{{pct statusCounts.passed statusCounts.total}}%"></div>
+      <div class="pb-seg pb-failed" style="width:{{pct statusCounts.failed statusCounts.total}}%"></div>
+      <div class="pb-seg pb-blocked" style="width:{{pct statusCounts.blocked statusCounts.total}}%"></div>
+      <div class="pb-seg pb-skipped" style="width:{{pct statusCounts.skipped statusCounts.total}}%"></div>
+      <div class="pb-seg pb-pending" style="flex:1"></div>
+    </div>
+    <div class="progress-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Passed</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div>Failed</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#7c3aed"></div>Blocked</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#9ca3af"></div>Skipped</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e5e7eb"></div>Pending</div>
+    </div>
+  </div>
+
+  <!-- ── Run-Level Notes ── -->
+  {{#if runNotes.length}}
+  <div class="run-notes-section">
+    <h2>Run Notes</h2>
+    {{#each runNotes}}
+    <div class="run-note-card">
+      <div class="run-note-time">{{formatDateTime created_at}}</div>
+      <div class="run-note-body">{{{content}}}</div>
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+
+  <!-- ── Results ── -->
+  <div class="results-section">
+    <h2>Test Case Results</h2>
+    {{#each results}}
+    <div class="result-card">
+      <div class="result-card-header">
+        <span class="result-status-pill pill-{{status}}">{{capitalize status}}</span>
+        <div class="result-title">{{title}}</div>
+        <div class="result-badges">
+          <span class="badge badge-gray">
+            <span class="priority-dot dot-{{priority}}"></span>{{capitalize priority}}
+          </span>
+          <span class="badge badge-gray">{{typeLabel type}}</span>
+          {{#if group_name}}<span class="badge badge-blue">{{group_name}}</span>{{/if}}
+        </div>
+      </div>
+      <div class="result-card-body">
+        {{#if (or case_description (or url (or steps expected_result)))}}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
+          {{#if case_description}}
+          <div class="result-section">
+            <div class="result-section-label">Description</div>
+            <div class="result-section-content">{{case_description}}</div>
+          </div>
+          {{/if}}
+          {{#if expected_result}}
+          <div class="result-section">
+            <div class="result-section-label">Expected Result</div>
+            <div class="expected-box">{{expected_result}}</div>
+          </div>
+          {{/if}}
+        </div>
+        {{#if url}}
+        <div class="result-section">
+          <div class="result-section-label">URL</div>
+          <a href="{{url}}" class="url-link">{{url}}</a>
+        </div>
+        {{/if}}
+        {{#if steps}}
+        <div class="result-section">
+          <div class="result-section-label">Steps</div>
+          <ol class="steps-ol" id="steps-{{@index}}">
+            <li data-raw="{{steps}}">{{steps}}</li>
+          </ol>
+        </div>
+        {{/if}}
+        {{/if}}
+
+        {{#if notes.length}}
+        <div class="notes-area">
+          <div class="result-section-label" style="margin-bottom:8px">Notes ({{notes.length}})</div>
+          {{#each notes}}
+          <div class="note-item">
+            <div class="note-item-time">{{formatDateTime created_at}}</div>
+            <div class="note-item-content">{{{content}}}</div>
+          </div>
+          {{/each}}
+        </div>
+        {{/if}}
+      </div>
+    </div>
+    {{/each}}
+  </div>
+
+  <!-- ── Footer ── -->
+  <div class="report-footer">
+    <span>Generated by TestFlow · {{formatDateTime run.created_at}}</span>
+    <span>{{project.name}} / {{repo.name}}</span>
+  </div>
+</div>
+
+<script>
+// Parse plain-text steps into numbered list items
+document.querySelectorAll('.steps-ol').forEach(ol => {
+  const li = ol.querySelector('li');
+  if (!li) return;
+  const raw = li.dataset.raw || '';
+  const lines = raw.split('\n').map(l => l.replace(/^\d+[\.\)]\s*/, '').trim()).filter(Boolean);
+  ol.innerHTML = '';
+  lines.forEach(line => {
+    const newLi = document.createElement('li');
+    newLi.textContent = line;
+    ol.appendChild(newLi);
+  });
+});
+
+// Auto-trigger print dialog after a short delay if ?autoprint=1
+if (new URLSearchParams(window.location.search).get('autoprint') === '1') {
+  setTimeout(() => window.print(), 800);
+}
+</script>
+</body>
+</html>
