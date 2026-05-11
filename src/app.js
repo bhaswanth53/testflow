@@ -59,6 +59,7 @@ const casesRouter = require('./routes/testcases');
 const plansRouter = require('./routes/testplans');
 const runsRouter = require('./routes/testruns');
 const uploadsRouter = require('./routes/uploads');
+const transferRouter = require('./routes/transfer');
 
 app.use('/', projectsRouter);
 app.use('/projects/:projectSlug/repos', reposRouter);
@@ -66,6 +67,7 @@ app.use('/projects/:projectSlug/repos/:repoSlug/cases', casesRouter);
 app.use('/projects/:projectSlug/repos/:repoSlug/plans', plansRouter);
 app.use('/projects/:projectSlug/repos/:repoSlug/runs', runsRouter);
 app.use('/upload', uploadsRouter);
+app.use('/transfer', transferRouter);
 
 // 404
 app.use((req, res) => res.status(404).render('404', { title: 'Not Found' }));

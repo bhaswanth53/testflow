@@ -3,7 +3,10 @@
     <h1>Projects</h1>
     <p style="color:var(--text-2);margin-top:4px;font-size:0.9rem;">Manage your test case projects and repositories</p>
   </div>
-  <button class="btn btn-primary" data-modal="modal-new-project">+ New Project</button>
+  <div class="btn-group">
+    <button class="btn btn-secondary" data-modal="modal-import-project">⬆ Import Project</button>
+    <button class="btn btn-primary" data-modal="modal-new-project">+ New Project</button>
+  </div>
 </div>
 
 {{#if projects.length}}
@@ -18,7 +21,8 @@
           {{#if description}}<div class="project-desc" style="margin-top:3px">{{truncate description 80}}</div>{{/if}}
         </div>
       </div>
-      <button class="btn btn-icon btn-ghost" data-modal="modal-edit-project-{{id}}" title="Edit" style="font-size:0.9rem">✎</button>
+      <button class="btn btn-icon btn-ghost" data-modal="modal-edit-project-{{id}}" title="Edit"
+        style="font-size:0.9rem">✎</button>
     </div>
     <div class="project-stats">
       <div class="project-stat">
@@ -58,7 +62,8 @@
             <label class="form-label">Color</label>
             <div class="color-swatches">
               {{#each (colorList)}}
-              <div class="color-swatch {{#if (eq this ../color)}}selected{{/if}}" style="background:{{this}}" data-color="{{this}}" data-target="color-{{../id}}"></div>
+              <div class="color-swatch {{#if (eq this ../color)}}selected{{/if}}" style="background:{{this}}"
+                data-color="{{this}}" data-target="color-{{../id}}"></div>
               {{/each}}
             </div>
             <input type="hidden" name="color" id="color-{{id}}" value="{{color}}">
@@ -66,7 +71,8 @@
         </div>
         <div class="modal-footer">
           <form action="/projects/{{slug}}/delete" method="POST" style="margin-right:auto">
-            <button type="submit" class="btn btn-danger btn-sm" data-confirm="Delete this project and ALL its data?">Delete Project</button>
+            <button type="submit" class="btn btn-danger btn-sm"
+              data-confirm="Delete this project and ALL its data?">Delete Project</button>
           </form>
           <button type="button" class="btn btn-secondary" data-close-modal="modal-edit-project-{{id}}">Cancel</button>
           <button type="submit" class="btn btn-primary">Save</button>
@@ -99,20 +105,30 @@
         </div>
         <div class="form-group">
           <label class="form-label">Description</label>
-          <textarea class="form-control" name="description" rows="2" placeholder="What is this project about?"></textarea>
+          <textarea class="form-control" name="description" rows="2"
+            placeholder="What is this project about?"></textarea>
         </div>
         <div class="form-group">
           <label class="form-label">Color</label>
           <div class="color-swatches">
-            <div class="color-swatch selected" style="background:#4f7ef8" data-color="#4f7ef8" data-target="new-project-color"></div>
-            <div class="color-swatch" style="background:#16a34a" data-color="#16a34a" data-target="new-project-color"></div>
-            <div class="color-swatch" style="background:#dc2626" data-color="#dc2626" data-target="new-project-color"></div>
-            <div class="color-swatch" style="background:#d97706" data-color="#d97706" data-target="new-project-color"></div>
-            <div class="color-swatch" style="background:#7c3aed" data-color="#7c3aed" data-target="new-project-color"></div>
-            <div class="color-swatch" style="background:#ea580c" data-color="#ea580c" data-target="new-project-color"></div>
-            <div class="color-swatch" style="background:#0891b2" data-color="#0891b2" data-target="new-project-color"></div>
-            <div class="color-swatch" style="background:#db2777" data-color="#db2777" data-target="new-project-color"></div>
-            <div class="color-swatch" style="background:#374151" data-color="#374151" data-target="new-project-color"></div>
+            <div class="color-swatch selected" style="background:#4f7ef8" data-color="#4f7ef8"
+              data-target="new-project-color"></div>
+            <div class="color-swatch" style="background:#16a34a" data-color="#16a34a" data-target="new-project-color">
+            </div>
+            <div class="color-swatch" style="background:#dc2626" data-color="#dc2626" data-target="new-project-color">
+            </div>
+            <div class="color-swatch" style="background:#d97706" data-color="#d97706" data-target="new-project-color">
+            </div>
+            <div class="color-swatch" style="background:#7c3aed" data-color="#7c3aed" data-target="new-project-color">
+            </div>
+            <div class="color-swatch" style="background:#ea580c" data-color="#ea580c" data-target="new-project-color">
+            </div>
+            <div class="color-swatch" style="background:#0891b2" data-color="#0891b2" data-target="new-project-color">
+            </div>
+            <div class="color-swatch" style="background:#db2777" data-color="#db2777" data-target="new-project-color">
+            </div>
+            <div class="color-swatch" style="background:#374151" data-color="#374151" data-target="new-project-color">
+            </div>
           </div>
           <input type="hidden" name="color" id="new-project-color" value="#4f7ef8">
         </div>
@@ -122,5 +138,38 @@
         <button type="submit" class="btn btn-primary">Create Project</button>
       </div>
     </form>
+  </div>
+
+  <!-- Import Project Modal -->
+  <div class="modal-overlay" id="modal-import-project">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Import Project</h2>
+        <button class="modal-close" data-close-modal="modal-import-project">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.875rem;color:var(--text-2);margin-bottom:16px">
+          Import a full project or repository from a <code>.testflow.zip</code> file.
+          A new project or repository will be created — nothing existing will be overwritten.
+        </p>
+        <div id="import-project-status" style="display:none;margin-bottom:12px"></div>
+        <div class="form-group">
+          <label class="form-label">Select .testflow.zip file</label>
+          <input type="file" class="form-control" id="import-project-file" accept=".zip">
+        </div>
+        <div class="form-group" id="import-project-select-wrap" style="display:none">
+          <label class="form-label">Target Project <span style="font-size:0.78rem;color:var(--text-3)">(required when
+              importing a repository)</span></label>
+          <select class="form-control" id="import-project-select">
+            <option value="">— Select a project —</option>
+            {{#each projects}}
+            <option value="{{id}}">{{name}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <button type="button" class="btn btn-primary" id="import-project-submit"
+          style="width:100%;justify-content:center">⬆ Import</button>
+      </div>
+    </div>
   </div>
 </div>

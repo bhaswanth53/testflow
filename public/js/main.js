@@ -74,7 +74,7 @@ document.addEventListener('change', async e => {
       // update progress counts
       updateProgress();
     }
-  } catch {}
+  } catch { }
 });
 
 function updateProgress() {
@@ -85,7 +85,7 @@ function updateProgress() {
 
   const bar = document.querySelector('.progress-stacked');
   if (bar && total > 0) {
-    ['passed','failed','blocked','skipped','pending'].forEach(st => {
+    ['passed', 'failed', 'blocked', 'skipped', 'pending'].forEach(st => {
       const seg = bar.querySelector(`.seg-${st}`);
       if (seg) seg.style.width = ((counts[st] / total) * 100) + '%';
     });
@@ -185,7 +185,7 @@ function syncHidden(editor, hidden) {
 function updateToolbarState(toolbar, editor) {
   toolbar.querySelectorAll('.toolbar-btn[data-cmd]').forEach(btn => {
     const cmd = btn.dataset.cmd;
-    if (['bold','italic','underline','strikeThrough'].includes(cmd)) {
+    if (['bold', 'italic', 'underline', 'strikeThrough'].includes(cmd)) {
       btn.classList.toggle('active', document.queryCommandState(cmd));
     }
   });
@@ -244,7 +244,7 @@ document.addEventListener('submit', async e => {
       if (hidden) hidden.value = '';
       showToast('Note added', 'success');
     }
-  } catch {}
+  } catch { }
 });
 
 /* ── Select all test cases ── */
@@ -288,3 +288,53 @@ document.querySelectorAll('[data-confirm]').forEach(btn => {
 /* small helpers */
 function $(s) { return document.querySelector(s); }
 function $$(s) { return document.querySelectorAll(s); }
+
+/* ── Import handlers ── */
+
+document.getElementById('import-project-file')?.addEventListener('change', function() {
+  var wrap = document.getElementById('import-project-select-wrap');
+  if (wrap) wrap.style.display = '';
+});
+
+document.getElementById('import-project-submit')?.addEventListener('click', async function() {
+  var file = document.getElementById('import-project-file')?.files[0];
+  if (!file) { showToast('Please select a file', 'error'); return; }
+  var projectId = document.getElementById('import-project-select')?.value || '';
+  await doImport(file, { target_project_id: projectId }, 'import-project-status', this);
+});
+
+document.getElementById('import-repo-submit')?.addEventListener('click', async function() {
+  var file = document.getElementById('import-repo-file')?.files[0];
+  if (!file) { showToast('Please select a file', 'error'); return; }
+  var repoId = this.dataset.repoId;
+  if (!repoId) { showToast('Cannot determine target repository', 'error'); return; }
+  await doImport(file, { target_repo_id: repoId }, 'import-repo-status', this);
+});
+
+async function doImport(file, extraFields, statusElId, btn) {
+  var statusEl = document.getElementById(statusElId);
+  var origText = btn.textContent;
+  btn.textContent = 'Importing\u2026'; btn.disabled = true;
+  var fd = new FormData();
+  fd.append('file', file);
+  Object.entries(extraFields).forEach(function(e) { if (e[1]) fd.append(e[0], e[1]); });
+  try {
+    var r = await fetch('/transfer/import', { method: 'POST', body: fd });
+    var data = await r.json();
+    if (data.ok) {
+      if (statusEl) {
+        statusEl.style.display = '';
+        statusEl.innerHTML = '<div style="background:var(--green-dim);color:var(--green);border-radius:var(--radius);padding:10px 12px;font-size:0.875rem">\u2705 Import successful! Redirecting\u2026</div>';
+      }
+      setTimeout(function() { window.location.href = data.redirect; }, 1000);
+    } else {
+      throw new Error(data.error || 'Import failed');
+    }
+  } catch(err) {
+    if (statusEl) {
+      statusEl.style.display = '';
+      statusEl.innerHTML = '<div style="background:var(--red-dim);color:var(--red);border-radius:var(--radius);padding:10px 12px;font-size:0.875rem">\u274c ' + err.message + '</div>';
+    }
+    btn.textContent = origText; btn.disabled = false;
+  }
+}

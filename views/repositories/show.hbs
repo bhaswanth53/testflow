@@ -4,6 +4,8 @@
     {{#if repo.description}}<p>{{repo.description}}</p>{{/if}}
   </div>
   <div class="btn-group">
+    <button class="btn btn-secondary" data-modal="modal-export-repo">⬇ Export</button>
+    <button class="btn btn-secondary" data-modal="modal-import-repo">⬆ Import</button>
     <button class="btn btn-secondary" data-modal="modal-edit-repo">✎ Edit</button>
     <button class="btn btn-primary" data-modal="modal-new-case">+ New Test Case</button>
   </div>
@@ -34,14 +36,17 @@
 <div class="card" style="margin-bottom:24px">
   <div class="card-body" style="display:flex;gap:24px;flex-wrap:wrap;align-items:center">
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
-      <span style="font-size:0.78rem;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em">Priority</span>
+      <span
+        style="font-size:0.78rem;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em">Priority</span>
       {{#each priorityStats}}
-      <span class="priority-badge {{priority}}"><span class="priority-dot {{priority}}"></span>{{capitalize priority}} <strong>{{cnt}}</strong></span>
+      <span class="priority-badge {{priority}}"><span class="priority-dot {{priority}}"></span>{{capitalize priority}}
+        <strong>{{cnt}}</strong></span>
       {{/each}}
     </div>
     <div class="toolbar-sep" style="height:18px;background:var(--border);width:1px"></div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
-      <span style="font-size:0.78rem;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em">Type</span>
+      <span
+        style="font-size:0.78rem;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em">Type</span>
       {{#each typeStats}}
       <span class="badge badge-gray">{{typeLabel type}} {{cnt}}</span>
       {{/each}}
@@ -53,14 +58,18 @@
 <!-- Tabs -->
 <div class="tab-set">
   <div class="tabs">
-    <button class="tab-btn active" data-tab="tab-cases">Test Cases <span class="badge badge-gray" style="margin-left:4px">{{testCases.length}}</span></button>
-    <button class="tab-btn" data-tab="tab-plans">Test Plans <span class="badge badge-gray" style="margin-left:4px">{{testPlans.length}}</span></button>
-    <button class="tab-btn" data-tab="tab-runs">Test Runs <span class="badge badge-gray" style="margin-left:4px">{{testRuns.length}}</span></button>
+    <button class="tab-btn active" data-tab="tab-cases">Test Cases <span class="badge badge-gray"
+        style="margin-left:4px">{{testCases.length}}</span></button>
+    <button class="tab-btn" data-tab="tab-plans">Test Plans <span class="badge badge-gray"
+        style="margin-left:4px">{{testPlans.length}}</span></button>
+    <button class="tab-btn" data-tab="tab-runs">Test Runs <span class="badge badge-gray"
+        style="margin-left:4px">{{testRuns.length}}</span></button>
   </div>
 
   <!-- Test Cases Tab -->
   <div class="tab-panel active" id="tab-cases">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+    <div
+      style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
       <div class="search-wrap" style="flex:1;max-width:320px">
         <span class="search-icon">🔍</span>
         <input type="text" class="form-control" id="case-search" placeholder="Search test cases…">
@@ -72,25 +81,25 @@
     </div>
 
     {{#if testCases.length}}
-      <!-- Ungrouped cases -->
-      {{#if ungroupedCases.length}}
-      <div class="group-section">
-        <div class="group-label"><span>Ungrouped</span></div>
-        {{#each ungroupedCases}}
-        {{> case-card project=../project repo=../repo case=this}}
-        {{/each}}
-      </div>
-      {{/if}}
-
-      <!-- Grouped cases -->
-      {{#each groupedCases}}
-      <div class="group-section">
-        <div class="group-label"><span>{{name}}</span> <span class="badge badge-gray">{{cases.length}}</span></div>
-        {{#each cases}}
-        {{> case-card project=../../project repo=../../repo case=this}}
-        {{/each}}
-      </div>
+    <!-- Ungrouped cases -->
+    {{#if ungroupedCases.length}}
+    <div class="group-section">
+      <div class="group-label"><span>Ungrouped</span></div>
+      {{#each ungroupedCases}}
+      {{> case-card project=../project repo=../repo case=this}}
       {{/each}}
+    </div>
+    {{/if}}
+
+    <!-- Grouped cases -->
+    {{#each groupedCases}}
+    <div class="group-section">
+      <div class="group-label"><span>{{name}}</span> <span class="badge badge-gray">{{cases.length}}</span></div>
+      {{#each cases}}
+      {{> case-card project=../../project repo=../../repo case=this}}
+      {{/each}}
+    </div>
+    {{/each}}
     {{else}}
     <div class="empty-state">
       <div class="empty-state-icon">🧪</div>
@@ -109,22 +118,31 @@
     <div class="card">
       <div class="table-wrap">
         <table>
-          <thead><tr>
-            <th>Name</th><th>Description</th><th>Cases</th><th>Status</th><th>Created</th><th></th>
-          </tr></thead>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Cases</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th></th>
+            </tr>
+          </thead>
           <tbody>
-          {{#each testPlans}}
-          <tr>
-            <td><a href="/projects/{{../project.slug}}/repos/{{../repo.slug}}/plans/{{id}}" style="font-weight:500">{{name}}</a></td>
-            <td style="color:var(--text-2);font-size:0.85rem">{{truncate description 60}}</td>
-            <td><span class="badge badge-blue">{{case_count}}</span></td>
-            <td><span class="status-badge {{status}}">{{statusLabel status}}</span></td>
-            <td style="color:var(--text-3);font-size:0.82rem">{{formatDate created_at}}</td>
-            <td>
-              <a href="/projects/{{../project.slug}}/repos/{{../repo.slug}}/plans/{{id}}" class="btn btn-ghost btn-sm">View</a>
-            </td>
-          </tr>
-          {{/each}}
+            {{#each testPlans}}
+            <tr>
+              <td><a href="/projects/{{../project.slug}}/repos/{{../repo.slug}}/plans/{{id}}"
+                  style="font-weight:500">{{name}}</a></td>
+              <td style="color:var(--text-2);font-size:0.85rem">{{truncate description 60}}</td>
+              <td><span class="badge badge-blue">{{case_count}}</span></td>
+              <td><span class="status-badge {{status}}">{{statusLabel status}}</span></td>
+              <td style="color:var(--text-3);font-size:0.82rem">{{formatDate created_at}}</td>
+              <td>
+                <a href="/projects/{{../project.slug}}/repos/{{../repo.slug}}/plans/{{id}}"
+                  class="btn btn-ghost btn-sm">View</a>
+              </td>
+            </tr>
+            {{/each}}
           </tbody>
         </table>
       </div>
@@ -147,27 +165,39 @@
     <div class="card">
       <div class="table-wrap">
         <table>
-          <thead><tr>
-            <th>Name</th><th>Plan</th><th>Progress</th><th>Status</th><th>Created</th><th></th>
-          </tr></thead>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Plan</th>
+              <th>Progress</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th></th>
+            </tr>
+          </thead>
           <tbody>
-          {{#each testRuns}}
-          <tr>
-            <td><a href="/projects/{{../project.slug}}/repos/{{../repo.slug}}/runs/{{id}}" style="font-weight:500">{{name}}</a></td>
-            <td style="color:var(--text-2);font-size:0.85rem">{{or plan_name '—'}}</td>
-            <td style="min-width:120px">
-              <div style="display:flex;align-items:center;gap:8px">
-                <div class="progress-bar" style="flex:1;height:5px">
-                  <div class="progress-fill" style="width:{{pct (add passed (add failed (add blocked skipped))) total}}%;background:{{#if failed}}var(--red){{else}}var(--green){{/if}}"></div>
+            {{#each testRuns}}
+            <tr>
+              <td><a href="/projects/{{../project.slug}}/repos/{{../repo.slug}}/runs/{{id}}"
+                  style="font-weight:500">{{name}}</a></td>
+              <td style="color:var(--text-2);font-size:0.85rem">{{or plan_name '—'}}</td>
+              <td style="min-width:120px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div class="progress-bar" style="flex:1;height:5px">
+                    <div class="progress-fill"
+                      style="width:{{pct (add passed (add failed (add blocked skipped))) total}}%;background:{{#if failed}}var(--red){{else}}var(--green){{/if}}">
+                    </div>
+                  </div>
+                  <span style="font-size:0.75rem;color:var(--text-3)">{{add passed (add failed (add blocked
+                    skipped))}}/{{total}}</span>
                 </div>
-                <span style="font-size:0.75rem;color:var(--text-3)">{{add passed (add failed (add blocked skipped))}}/{{total}}</span>
-              </div>
-            </td>
-            <td><span class="status-badge {{status}}">{{statusLabel status}}</span></td>
-            <td style="color:var(--text-3);font-size:0.82rem">{{formatDate created_at}}</td>
-            <td><a href="/projects/{{../project.slug}}/repos/{{../repo.slug}}/runs/{{id}}" class="btn btn-ghost btn-sm">Open</a></td>
-          </tr>
-          {{/each}}
+              </td>
+              <td><span class="status-badge {{status}}">{{statusLabel status}}</span></td>
+              <td style="color:var(--text-3);font-size:0.82rem">{{formatDate created_at}}</td>
+              <td><a href="/projects/{{../project.slug}}/repos/{{../repo.slug}}/runs/{{id}}"
+                  class="btn btn-ghost btn-sm">Open</a></td>
+            </tr>
+            {{/each}}
           </tbody>
         </table>
       </div>
@@ -247,11 +277,13 @@
         </div>
         <div class="form-group">
           <label class="form-label">Preconditions</label>
-          <textarea class="form-control" name="preconditions" rows="2" placeholder="What must be set up before running this test?"></textarea>
+          <textarea class="form-control" name="preconditions" rows="2"
+            placeholder="What must be set up before running this test?"></textarea>
         </div>
         <div class="form-group">
           <label class="form-label">Steps</label>
-          <textarea class="form-control" name="steps" rows="4" placeholder="1. Navigate to...&#10;2. Click on...&#10;3. Verify that..."></textarea>
+          <textarea class="form-control" name="steps" rows="4"
+            placeholder="1. Navigate to...&#10;2. Click on...&#10;3. Verify that..."></textarea>
           <div class="form-hint">Enter each step on a new line</div>
         </div>
         <div class="form-group">
@@ -291,7 +323,8 @@
       </div>
       <div class="modal-footer">
         <form action="/projects/{{project.slug}}/repos/{{repo.slug}}/delete" method="POST" style="margin-right:auto">
-          <button type="submit" class="btn btn-danger btn-sm" data-confirm="Delete this repository and all its data?">Delete</button>
+          <button type="submit" class="btn btn-danger btn-sm"
+            data-confirm="Delete this repository and all its data?">Delete</button>
         </form>
         <button type="button" class="btn btn-secondary" data-close-modal="modal-edit-repo">Cancel</button>
         <button type="submit" class="btn btn-primary">Save</button>
@@ -311,10 +344,13 @@
       {{#if groups.length}}
       <div style="margin-bottom:16px">
         {{#each groups}}
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-light)">
+        <div
+          style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-light)">
           <span style="font-weight:500">{{name}}</span>
-          <form action="/projects/{{../project.slug}}/repos/{{../repo.slug}}/groups/{{id}}/delete" method="POST" style="display:inline">
-            <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--red)" data-confirm="Delete this group? Cases won't be deleted.">✕</button>
+          <form action="/projects/{{../project.slug}}/repos/{{../repo.slug}}/groups/{{id}}/delete" method="POST"
+            style="display:inline">
+            <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--red)"
+              data-confirm="Delete this group? Cases won't be deleted.">✕</button>
           </form>
         </div>
         {{/each}}
@@ -326,6 +362,85 @@
           <button type="submit" class="btn btn-primary" style="white-space:nowrap">Add Group</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Export Repo Modal -->
+  <div class="modal-overlay" id="modal-export-repo">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Export Repository</h2>
+        <button class="modal-close" data-close-modal="modal-export-repo">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.875rem;color:var(--text-2);margin-bottom:16px">Choose what to export from
+          <strong>{{repo.name}}</strong>. Downloads as a <code>.testflow.zip</code> file.</p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <a href="/transfer/export?type=repository&id={{repo.id}}" class="btn btn-secondary"
+            style="justify-content:flex-start">
+            📦 Full Repository <span style="font-size:0.78rem;color:var(--text-3);margin-left:4px">— cases, groups,
+              plans, runs</span>
+          </a>
+          <a href="/transfer/export?type=testcases&id={{repo.id}}" class="btn btn-secondary"
+            style="justify-content:flex-start">
+            🧪 Test Cases Only <span style="font-size:0.78rem;color:var(--text-3);margin-left:4px">— cases and
+              groups</span>
+          </a>
+        </div>
+        {{#if testPlans.length}}
+        <div class="divider"></div>
+        <div style="font-size:0.82rem;font-weight:600;color:var(--text-2);margin-bottom:8px">Export a specific plan:
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          {{#each testPlans}}
+          <a href="/transfer/export?type=testplan&id={{id}}" class="btn btn-secondary btn-sm"
+            style="justify-content:flex-start">
+            📋 {{name}}
+          </a>
+          {{/each}}
+        </div>
+        {{/if}}
+        {{#if testRuns.length}}
+        <div class="divider"></div>
+        <div style="font-size:0.82rem;font-weight:600;color:var(--text-2);margin-bottom:8px">Export a specific run:
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          {{#each testRuns}}
+          <a href="/transfer/export?type=testrun&id={{id}}" class="btn btn-secondary btn-sm"
+            style="justify-content:flex-start">
+            ▶ {{name}} <span class="status-badge {{status}}" style="margin-left:6px">{{status}}</span>
+          </a>
+          {{/each}}
+        </div>
+        {{/if}}
+      </div>
+    </div>
+  </div>
+
+  <!-- Import into Repo Modal -->
+  <div class="modal-overlay" id="modal-import-repo">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Import into Repository</h2>
+        <button class="modal-close" data-close-modal="modal-import-repo">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.875rem;color:var(--text-2);margin-bottom:16px">
+          Import test cases, a test plan, or a test run into <strong>{{repo.name}}</strong>.
+          Upload a <code>.testflow.zip</code> file exported from any TestFlow instance.
+        </p>
+        <div
+          style="font-size:0.8rem;background:var(--yellow-dim);border:1px solid #fde68a;border-radius:var(--radius);padding:10px 12px;margin-bottom:16px;color:var(--yellow)">
+          ⚠ Supported types: <strong>testcases</strong>, <strong>testplan</strong>, <strong>testrun</strong>.
+          To import a full repository or project, use the Import button on the Projects page.
+        </div>
+        <div id="import-repo-status" style="display:none;margin-bottom:12px"></div>
+        <div class="form-group">
+          <label class="form-label">Select .testflow.zip file</label>
+          <input type="file" class="form-control" id="import-repo-file" accept=".zip">
+        </div>
+        <button type="button" class="btn btn-primary" id="import-repo-submit" data-repo-id="{{repo.id}}" style="width:100%;justify-content:center">⬆ Import</button>
+      </div>
     </div>
   </div>
 </div>
