@@ -20,7 +20,14 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Environment</label>
-              <input class="form-control" name="environment" placeholder="e.g. Staging, Production, Local">
+              <select class="form-control" name="environment">
+                <option value="">— Select Environment —</option>
+                <option value="Local">Local</option>
+                <option value="Development">Development</option>
+                <option value="QA">QA</option>
+                <option value="Staging">Staging</option>
+                <option value="Production">Production</option>
+              </select>
             </div>
             <div class="form-group">
               <label class="form-label">Browser</label>

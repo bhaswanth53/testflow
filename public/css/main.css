@@ -1428,3 +1428,16 @@ pre {
   border-radius: 4px;
   margin: 4px 0;
 }
+
+.env-badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 9px; border-radius: 99px;
+  font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.03em; white-space: nowrap;
+}
+.env-local     { background: #e8eaf0; color: #374257; }
+.env-dev       { background: #dbeafe; color: #1d4ed8; }
+.env-qa        { background: #ede9fe; color: #6425c9; }
+.env-staging   { background: #fef3c7; color: #92400e; }
+.env-prod      { background: #fde8e8; color: #991b1b; }
+.env-default   { background: #e8eaf0; color: #374257; }

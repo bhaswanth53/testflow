@@ -148,13 +148,14 @@
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>Name</th><th>Plan</th><th>Progress</th><th>Status</th><th>Created</th><th></th>
+            <th>Name</th><th>Plan</th><th>Environment</th><th>Progress</th><th>Status</th><th>Created</th><th></th>
           </tr></thead>
           <tbody>
           {{#each testRuns}}
           <tr>
             <td><a href="/projects/{{../project.slug}}/repos/{{../repo.slug}}/runs/{{id}}" style="font-weight:500">{{name}}</a></td>
             <td style="color:var(--text-2);font-size:0.85rem">{{or plan_name '—'}}</td>
+            <td>{{#if environment}}<span class="env-badge env-{{envClass environment}}">{{environment}}</span>{{else}}<span style="color:var(--text-3)">—</span>{{/if}}</td>
             <td style="min-width:120px">
               <div style="display:flex;align-items:center;gap:8px">
                 <div class="progress-bar" style="flex:1;height:5px">

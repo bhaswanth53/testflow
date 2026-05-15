@@ -19,6 +19,7 @@ const hbs = create({
     json: (v) => { try { return typeof v === 'string' ? JSON.parse(v) : JSON.stringify(v); } catch(e) { return JSON.stringify(v); } },
     parseJson: (v) => { try { return JSON.parse(v); } catch(e) { return []; } },
     colorList: () => ["#4f7ef8","#16a34a","#dc2626","#d97706","#7c3aed","#ea580c","#0891b2","#db2777","#374151"],
+    envClass: (e) => ({ 'Local': 'local', 'Development': 'dev', 'QA': 'qa', 'Staging': 'staging', 'Production': 'prod' }[e] || 'default'),
     priorityClass: (p) => ({ critical: 'priority-critical', high: 'priority-high', medium: 'priority-medium', low: 'priority-low' }[p] || ''),
     statusClass: (s) => ({ passed: 'status-passed', failed: 'status-failed', blocked: 'status-blocked', skipped: 'status-skipped', pending: 'status-pending', in_progress: 'status-inprogress', completed: 'status-completed', aborted: 'status-aborted', active: 'status-active', archived: 'status-archived' }[s] || ''),
     capitalize: (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '',
